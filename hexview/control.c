@@ -106,14 +106,14 @@ open_file_on_state(state_t *state, const char *filename)
 
 	/* make file size string */
 	if (state->file->size < 1024)
-		sprintf_s(sizestr, sizeof(sizestr), "%ld B", state->file->size);
+		snprintf(sizestr, sizeof(sizestr), "%d B", state->file->size);
 	else if (state->file->size < 1024 * 1024)
-		sprintf_s(sizestr, sizeof(sizestr), "%ld KiB", state->file->size / 1024);
+		snprintf(sizestr, sizeof(sizestr), "%d KiB", state->file->size / 1024);
 	else
-		sprintf_s(sizestr, sizeof(sizestr), "%ld MiB", state->file->size / 1024 / 1024);
+		snprintf(sizestr, sizeof(sizestr), "%d MiB", state->file->size / 1024 / 1024);
 
 	printf("File: '%s'\n", filename);
-	printf("Size: %s [0x00000000, 0x%08lx)\n", sizestr, state->file->size);
+	printf("Size: %s [0x00000000, 0x%08x)\n", sizestr, state->file->size);
 	printf("Mode is %s endian.\n", state->current_endianess == LittleEndian ? "little" : "big");
 
 	return 1;
@@ -146,8 +146,8 @@ create_cmd(state_t *state, cmd_exec_fn proc, const char *name, const char *desc)
 	if (cmd)
 	{
 		cmd->proc = proc;
-		strcpy_s(cmd->name, sizeof(cmd->name), name);
-		strcpy_s(cmd->desc, sizeof(cmd->desc), desc);
+		strncpy(cmd->name, name, sizeof(cmd->name));
+		strncpy(cmd->desc, desc, sizeof(cmd->desc));
 
 		cmd->next = state->first;
 		state->first = cmd;
@@ -234,7 +234,7 @@ seek_cmd(state_t *state, token_list_t *tokens)
 			state->off = 0;
 	}
 
-	printf("Now looking at offset 0x%08lx\n", state->off);
+	printf("Now looking at offset 0x%08x\n", state->off);
 
 	return Continue;
 }
@@ -262,7 +262,7 @@ peek_cmd(state_t *state, token_list_t *tokens)
 		{
 			if (i > 0)
 				putchar('\n');
-			printf("0x%08lx:", at);
+			printf("0x%08x:", at);
 		}
 		printf(" %02hhx", state->file->data[at]);
 	}
@@ -414,7 +414,7 @@ strl_cmd(state_t *state, token_list_t *tokens)
 	if (it->token.integer > 0)
 		state->max_strlen = it->token.integer;
 
-	printf("Max string length set to: %ld\n", state->max_strlen);
+	printf("Max string length set to: %d\n", state->max_strlen);
 
 	return Continue;
 }
