@@ -27,7 +27,7 @@ struct state_s
 	int current_endianess;
 	int max_strlen;
 
-	struct cmd *first;
+	struct cmd *first;  // linked list of avaliable commands
 };
 
 static void create_cmd(state_t *state, cmd_exec_fn proc, const char *name, const char *desc);
@@ -89,6 +89,8 @@ destroy_state(state_t *state)
 int
 open_file_on_state(state_t *state, const char *filename)
 {
+	char sizestr[16];
+
 	if (state->file)
 	{
 		close_file(state->file);
@@ -102,8 +104,16 @@ open_file_on_state(state_t *state, const char *filename)
 	if (!state->file)
 		return 0;
 
+	/* make file size string */
+	if (state->file->size < 1024)
+		sprintf_s(sizestr, sizeof(sizestr), "%ld B", state->file->size);
+	else if (state->file->size < 1024 * 1024)
+		sprintf_s(sizestr, sizeof(sizestr), "%ld KiB", state->file->size / 1024);
+	else
+		sprintf_s(sizestr, sizeof(sizestr), "%ld MiB", state->file->size / 1024 / 1024);
+
 	printf("File: '%s'\n", filename);
-	printf("Size: %ld KiB [0x00000000, 0x%08lx)\n", state->file->size / 1024, state->file->size);
+	printf("Size: %s [0x00000000, 0x%08lx)\n", sizestr, state->file->size);
 	printf("Mode is %s endian.\n", state->current_endianess == LittleEndian ? "little" : "big");
 
 	return 1;
@@ -269,7 +279,7 @@ vals_cmd(state_t *state, token_list_t *tokens)
 	int read;
 	union { utf8_t *cursor8; utf16_t *cursor16; } strs;
 
-	valin = state->file->data + state->off;
+	valin = (value_u *)(state->file->data + state->off);
 	read = to_native_endianess(valin, state->file->size - state->off, state->current_endianess, &valout);
 	switch (read)
 	{
@@ -283,23 +293,51 @@ vals_cmd(state_t *state, token_list_t *tokens)
 		break;
 	}
 
-
 	if (read > 0)
 	{
 		printf("int8:    %hhd\n", valout.i8);
 		printf("uint8:   %hhu\n", valout.ui8);
+		if (read < 2) goto below16;
+	
 		printf("int16:   %hd\n", valout.i16);
 		printf("uint16:  %hu\n", valout.ui16);
+		if (read < 4) goto below32;
+
 		printf("int32:   %d\n", valout.i32);
 		printf("uint32:  %u\n", valout.ui32);
+		if (read < 8) goto below64;
+
 		printf("int64:   %lld\n", valout.i64);
 		printf("uint64:  %llu\n", valout.ui64);
-		printf("float32: %g\n", (double)valout.f32);
-		printf("float64: %g\n", (double)valout.f64);
+
+		goto floats;
+
+		below16:
+		printf("int16:   ?\n");
+		printf("uint16:  ?\n");
+		below32:
+		printf("int32:   ?\n");
+		printf("uint32:  ?\n");
+		below64:
+		printf("int64:   ?\n");
+		printf("uint64:  ?\n");
+
+		floats:
+		if (read < 4)
+		{
+			printf("float32: ?\n");
+			printf("float64: ?\n");;
+		}
+		else
+		{
+			printf("float32: %g\n", (double)valout.f32);
+			if (read < 8) printf("float64: ?\n");
+			else printf("float64: %g\n", (double)valout.f64);
+		}
 
 		printf("utf8:    ");
 		strs.cursor8 = valout.utf8;
-		for (long i = 0; i < state->max_strlen; i++, strs.cursor8++)
+		for (long i = 0; i < state->max_strlen && i < read; i++, strs.cursor8++)
 		{
 			if (!*strs.cursor8)
 				break;
@@ -309,7 +347,7 @@ vals_cmd(state_t *state, token_list_t *tokens)
 
 		printf("utf16:   ");
 		strs.cursor16 = valout.utf16;
-		for (long i = 0; i < state->max_strlen; i++, strs.cursor16++)
+		for (long i = 0; i < state->max_strlen && i < read / 2; i++, strs.cursor16++)
 		{
 			if (!*strs.cursor16)
 				break;
@@ -474,7 +512,7 @@ darr_cmd(state_t *state, token_list_t *tokens)
 		loc = state->file->data + state->off + (i * elemsize);
 		if (loc + elemtype > state->file->data + state->off + state->file->size)
 			break;
-		inval = loc;
+		inval = (value_u *)loc;
 
 		to_native_endianess(inval, 8, state->current_endianess, &outval);
 

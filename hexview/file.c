@@ -3,35 +3,40 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <Windows.h>
-#endif
 
-typedef struct win32_file_s win32_file_t;
-struct win32_file_s
+struct win32_file
 {
-	HANDLE hFile;
-	HANDLE hMap;
+	HANDLE hFile;  // file handle
+	HANDLE hMap;   // file mapping
 };
+
+#endif
 
 file_t *
 open_file(const char *filename)
 {
 	file_t *result;
 
-#ifdef WIN32
+#ifdef _WIN32
 	DWORD dwSize, dwHigh;
-	win32_file_t *file32;
+	struct win32_file *file32;
+	SYSTEM_INFO sysinfo;
+	DWORD dwBytesRead;
+	DWORD dwBytesRemaining;
+	BOOL bResult;
+	DWORD dwError;
 
-	result = malloc(offsetof(file_t, reserved) + sizeof(win32_file_t));
+	result = malloc(offsetof(file_t, reserved) + sizeof(struct win32_file));
 	if (!result)
 		return NULL;
-	file32 = &result->reserved;
+	file32 = (struct win32_file *)&result->reserved;
 
 	file32->hFile = CreateFileA(
 		filename,
 		GENERIC_READ,
-		0,
+		FILE_SHARE_READ,
 		NULL,
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL,
@@ -46,37 +51,79 @@ open_file(const char *filename)
 
 	dwSize = GetFileSize(file32->hFile, &dwHigh);
 	result->size = (int)dwSize;
-
-	file32->hMap = CreateFileMappingA(
-		file32->hFile,
-		NULL,
-		PAGE_READONLY,
-		0,
-		dwSize,
-		NULL
-	);
-
-	if (!file32->hMap)
+	if (!result->size)
 	{
 		CloseHandle(file32->hFile);
 		free(result);
 		return NULL;
 	}
 
-	result->data = MapViewOfFile(
-		file32->hMap,
-		FILE_MAP_READ,
-		0,
-		0,
-		dwSize
-	);
-
-	if (!result->data)
+	GetSystemInfo(&sysinfo);
+	if (dwSize >= sysinfo.dwPageSize)
 	{
-		CloseHandle(file32->hMap);
-		CloseHandle(file32->hFile);
-		free(result);
-		return NULL;
+		// create file mapping
+		file32->hMap = CreateFileMappingA(
+			file32->hFile,
+			NULL,
+			PAGE_READONLY,
+			0,
+			dwSize,
+			NULL
+		);
+
+		if (!file32->hMap)
+		{
+			CloseHandle(file32->hFile);
+			free(result);
+			return NULL;
+		}
+
+		// create view
+		result->data = MapViewOfFile(
+			file32->hMap,
+			FILE_MAP_READ,
+			0,
+			0,
+			dwSize
+		);
+
+		if (!result->data)
+		{
+			CloseHandle(file32->hMap);
+			CloseHandle(file32->hFile);
+			free(result);
+			return NULL;
+		}
+	}
+	else
+	{
+		file32->hMap = NULL;
+		result->data = malloc(dwSize);
+		if (!result->data)
+		{
+			CloseHandle(file32->hFile);
+			free(result);
+			return NULL;
+		}
+
+		dwBytesRemaining = dwSize;
+		do
+		{
+			bResult = ReadFile(file32->hFile, result->data, dwBytesRemaining, &dwBytesRead, NULL);
+			if (!bResult)
+			{
+				dwError = GetLastError();
+				if (dwError == ERROR_IO_PENDING)
+					continue;
+
+				free(result->data);
+				CloseHandle(file32->hFile);
+				free(result);
+				return NULL;
+			}
+
+			dwBytesRemaining -= dwBytesRead;
+		} while (dwBytesRemaining != 0);
 	}
 #else
 
@@ -88,13 +135,17 @@ open_file(const char *filename)
 void
 close_file(file_t *file)
 {
-#ifdef WIN32
-	win32_file_t *file32;
+#ifdef _WIN32
+	struct win32_file *file32;
 
-	file32 = &file->reserved;
+	file32 = (struct win32_file *)&file->reserved;
 
-	UnmapViewOfFile(file->data);
-	CloseHandle(file32->hMap);
+	if (file32->hMap)
+	{
+		UnmapViewOfFile(file->data);
+		CloseHandle(file32->hMap);
+	}
+
 	CloseHandle(file32->hFile);
 
 	free(file);

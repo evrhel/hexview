@@ -11,7 +11,7 @@ enum
 
 #define NATIVE_ENDIANESS 0
 
-#ifdef WIN32
+#ifdef _WIN32
 typedef unsigned __int8 byte;
 
 typedef char utf8_t;

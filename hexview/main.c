@@ -1,6 +1,8 @@
 #include "control.h"
 #include "util.h"
 
+#include <stdio.h>
+
 int
 main(int argc, char *argv[])
 {

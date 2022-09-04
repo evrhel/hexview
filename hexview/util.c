@@ -1,6 +1,7 @@
 #include "util.h"
 
 #include <stdio.h>
+#include <memory.h>
 
 int
 to_native_endianess(const value_u *in, int max_read, int endianess, outvalues_t *const out)
@@ -11,7 +12,7 @@ to_native_endianess(const value_u *in, int max_read, int endianess, outvalues_t 
 	toread = max_read < sizeof(value_u) ? max_read : sizeof(value_u);
 
 	memset(out, 0, sizeof(outvalues_t));
-	out->utf8 = in;
+	out->utf8 = (utf8_t *)in;
 
 	switch (endianess)
 	{

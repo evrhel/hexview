@@ -3,11 +3,12 @@
 #include <string.h>
 #include <stdlib.h>
 
+// Used to build a null-terminated string
 struct string_builder
 {
-	char *string;
-	int len;
-	int cap;
+	char *string;  // String being built
+	int len;       // Length of current string
+	int cap;       // Number of allocated bytes string points to
 };
 
 static token_list_t *
@@ -16,18 +17,23 @@ append_list(token_list_t *back);
 static void
 free_token_list_impl(token_list_t *front);
 
+// Create a string builder
 static struct string_builder *
 builder_create();
 
+// Free a string builder
 static void
 builder_free(struct string_builder *builder);
 
+// Append a character to a string builder
 static int
 builder_append_char(struct string_builder *builder, char append);
 
+// Append a string to a string builder
 static int
 builder_append(struct string_builder *builder, const char *append);
 
+// Store the string in a string builder into a heap allocaed string
 static char *
 builder_store(struct string_builder *builder);
 
@@ -157,14 +163,16 @@ tokenize(const char *string)
 	return front;
 }
 
-token_list_t *front_token(token_list_t *node)
+token_list_t *
+front_token(token_list_t *node)
 {
 	if (!node) return NULL;
 	while (node->prev) node = node->prev;
 	return node;
 }
 
-token_list_t *offset_token(token_list_t *node, int offset)
+token_list_t *
+offset_token(token_list_t *node, int offset)
 {
 	int i;
 
@@ -253,7 +261,7 @@ builder_create()
 static void
 builder_free(struct string_builder *builder)
 {
-	if (!builder) return NULL;
+	if (!builder) return;
 
 	free(builder->string);
 	free(builder);
@@ -275,7 +283,7 @@ builder_append_char(struct string_builder *builder, char append)
 			return 0;
 		builder->string = nbuf;
 		builder->cap = ncap;
-		return builder_append(builder, append);
+		return builder_append_char(builder, append);
 	}
 
 	*(builder->string + builder->len) = append;

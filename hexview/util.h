@@ -75,9 +75,24 @@ swap_endianess64(uint64 num)
 	return (num << 32) | (num >> 32);
 }
 
-
+// Convert data to the system's native endianess.
+// Parameters:
+// - in: Values to convert.
+// - max_read: Maximum number of bytes which can be read from in.
+// - endianess: The endianess of the input data.
+// - out: Output parameter which will contain the converted data.
+//
+// Returns:
+// Number of bytes written to out.
 int to_native_endianess(const value_u *in, int max_read, int endianess, outvalues_t *const out);
 
+// Read a line from stdin.
+// Parameters:
+// - out: Destination string.
+// - maxcount: Maximum number of characters to read from stdin.
+//
+// Returns:
+// The length of the string stored in out on return.
 int readline(char *const out, int maxcount);
 
 #endif
