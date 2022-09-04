@@ -24,7 +24,7 @@ struct win32_file
 
 struct linux_file
 {
-	int file;
+	int file;  // file descriptor
 };
 
 #endif
@@ -173,7 +173,13 @@ open_file(const char *filename)
 
 	if (result->size >= pagesize)
 	{
-
+		result->data = mmap(NULL, result->size, PROT_READ, MAP_SHARED, linux_file->file, 0);
+		if (result->data == MAP_FAILED)
+		{
+			close(linux_file->file);
+			free(result);
+			return NULL;
+		}
 	}
 	else
 	{
@@ -195,6 +201,10 @@ open_file(const char *filename)
 			{
 				if (errno == EAGAIN)
 					continue;
+
+				close(linux_file->file);
+				free(result);
+				return NULL;
 			}
 			remaining -= bytes_read;
 		} while (remaining > 0);
@@ -231,7 +241,12 @@ close_file(file_t *file)
 	linux_file = (struct linux_file *)&file->reserved;
 
 	if (linux_file->file)
+	{
+		munmap(file->data, file->size);
 		close(linux_file->file);
+	}
+	else
+		free(file->data);
 
 	free(file);
 #endif
