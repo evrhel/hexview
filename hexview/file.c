@@ -12,6 +12,21 @@ struct win32_file
 	HANDLE hMap;   // file mapping
 };
 
+#elif __linux__
+
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stddef.h>
+#include <errno.h>
+
+struct linux_file
+{
+	int file;
+};
+
 #endif
 
 file_t *
@@ -124,9 +139,69 @@ open_file(const char *filename)
 
 			dwBytesRemaining -= dwBytesRead;
 		} while (dwBytesRemaining != 0);
-	}
-#else
 
+		CloseHandle(file32->hFile);
+		file32->hFile = NULL;
+	}
+#elif __linux__
+	struct linux_file *linux_file;
+	struct stat st;
+	int pagesize;
+	ssize_t remaining;
+	ssize_t bytes_read;
+
+	result = malloc(offsetof(file_t, reserved) + sizeof(struct linux_file));
+	linux_file = (struct linux_file *)&result->reserved;
+
+	linux_file->file = open(filename, O_RDONLY);
+	if (!linux_file->file)
+	{
+		free(result);
+		return NULL;
+	}
+
+	pagesize = getpagesize();
+
+	fstat(linux_file->file, &st);
+	result->size = st.st_size;
+	if (result->size == 0)
+	{
+		close(linux_file->file);
+		free(result);
+		return NULL;
+	}
+
+	if (result->size >= pagesize)
+	{
+
+	}
+	else
+	{
+		result->data = malloc(result->size);
+		if (!result->data)
+		{
+			close(linux_file->file);
+			free(result);
+			return NULL;
+		}
+
+		remaining = result->size;
+		do
+		{
+			bytes_read = read(linux_file->file, result->data, remaining);
+			if (bytes_read == 0)
+				break;
+			else if (bytes_read == -1)
+			{
+				if (errno == EAGAIN)
+					continue;
+			}
+			remaining -= bytes_read;
+		} while (remaining > 0);
+
+		close(linux_file->file);
+		linux_file->file = 0;
+	}
 #endif
 
 	return result;
@@ -135,7 +210,7 @@ open_file(const char *filename)
 void
 close_file(file_t *file)
 {
-#ifdef _WIN32
+#if _WIN32
 	struct win32_file *file32;
 
 	file32 = (struct win32_file *)&file->reserved;
@@ -146,10 +221,18 @@ close_file(file_t *file)
 		CloseHandle(file32->hMap);
 	}
 
-	CloseHandle(file32->hFile);
+	if (file32->hFile)
+		CloseHandle(file32->hFile);
 
 	free(file);
-#else
+#elif __linux__
+	struct linux_file *linux_file;
 
+	linux_file = (struct linux_file *)&file->reserved;
+
+	if (linux_file->file)
+		close(linux_file->file);
+
+	free(file);
 #endif
 }
