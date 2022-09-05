@@ -146,8 +146,13 @@ create_cmd(state_t *state, cmd_exec_fn proc, const char *name, const char *desc)
 	if (cmd)
 	{
 		cmd->proc = proc;
+#if _WIN32
+		strcpy_s(cmd->name, sizeof(cmd->name), name);
+		strcpy_s(cmd->desc, sizeof(cmd->desc), desc);
+#elif __linux__
 		strncpy(cmd->name, name, sizeof(cmd->name));
 		strncpy(cmd->desc, desc, sizeof(cmd->desc));
+#endif
 
 		cmd->next = state->first;
 		state->first = cmd;

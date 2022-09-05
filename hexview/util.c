@@ -79,3 +79,26 @@ readline(char *const out, int maxcount)
 
 	return off;
 }
+
+int
+equals_ignore_case(const char *first, const char *second)
+{
+	for (; *first && *second; first++, second++)
+	{
+		if (*first == *second) continue;
+
+		if (*first >= 'A' && *first <= 'Z')
+		{
+			if (*first + 0x20 == *second)
+				continue;
+		}
+		else if (*first >= 'a' && *second <= 'z')
+		{
+			if (*first - 0x20 == *second)
+				continue;
+		}
+
+		return 0;
+	}
+	return *first == *second;
+}

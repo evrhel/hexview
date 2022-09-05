@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifdef _WIN32
+#if _WIN32
 #include <Windows.h>
 
 struct win32_file
@@ -34,7 +34,7 @@ open_file(const char *filename)
 {
 	file_t *result;
 
-#ifdef _WIN32
+#if _WIN32
 	DWORD dwSize, dwHigh;
 	struct win32_file *file32;
 	SYSTEM_INFO sysinfo;
@@ -230,6 +230,8 @@ close_file(file_t *file)
 		UnmapViewOfFile(file->data);
 		CloseHandle(file32->hMap);
 	}
+	else
+		free(file->data);
 
 	if (file32->hFile)
 		CloseHandle(file32->hFile);

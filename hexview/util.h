@@ -95,4 +95,13 @@ int to_native_endianess(const value_u *in, int max_read, int endianess, outvalue
 // The length of the string stored in out on return.
 int readline(char *const out, int maxcount);
 
+// Returns whether two strings are case-insensitively equal.
+// Parameters:
+// - first: First string to compare. Must be non-NULL.
+// - second: Second string to compare. Must be non-NULL.
+//
+// Returns:
+// Nonzero if case-insensitively equal.
+int equals_ignore_case(const char *first, const char *second);
+
 #endif
