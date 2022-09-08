@@ -3,14 +3,15 @@
 
 #include "defs.h"
 
-#define KEY(val) ((key_t)(val))
-#define VALUE(val) ((value_t)(val))
+typedef void *akey_t;
+typedef void *avalue_t;
+
+#define AKEY(val) ((akey_t)(val))
+#define AVALUE(val) ((avalue_t)(val))
 #define STRCMP ((compare_fn)&__string_compare_fn)
 #define STRCPY ((copy_fn)&__string_copy_fn)
 #define STRFREE ((free_fn)&free)
 
-typedef void *key_t;
-typedef void *value_t;
 typedef struct alist_s alist_t;
 
 typedef int(*compare_fn)(void *first, void *second);
@@ -139,7 +140,7 @@ alist_t *alist_create(compare_fn keycompare, copy_fn keycopy, free_fn keyfree, c
 // - alist: The list to insert into.
 // - key: The key of the pairing. Cannot be NULL.
 // - value: The value of the pairing.
-void alist_insert(alist_t *alist, key_t key, value_t value);
+void alist_insert(alist_t *alist, akey_t key, avalue_t value);
 
 // Finds a value by its pair and returns a pointer to the value.
 // If the value is dereferenced, the value within the associative
@@ -153,7 +154,7 @@ void alist_insert(alist_t *alist, key_t key, value_t value);
 // Returns:
 // A pointer to the value associated with that key, or NULL if
 // no such pairing exists.
-value_t *alist_find(alist_t *alist, key_t key);
+avalue_t *alist_find(alist_t *alist, akey_t key);
 
 // Frees an alist_t allocated with alist_create.
 // Parameters:

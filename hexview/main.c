@@ -2,8 +2,9 @@
 #include "util.h"
 
 #include <stdio.h>
+#include <string.h>
 
-#define HEXVIEW_VERSION "1.0.0-rc6"
+#define HEXVIEW_VERSION "1.0.0-rc7"
 
 struct command_line
 {

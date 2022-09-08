@@ -650,7 +650,7 @@ bind_cmd(state_t *state, token_list_t *tokens)
 	it = offset_token(it, 1);
 	value = it ? it->token.integer : state->off;
 
-	alist_insert(state->bindings, KEY(name), VALUE(value));
+	alist_insert(state->bindings, AKEY(name), AVALUE(value));
 
 	printf("Bound \033[33m%s\033[m -> \033[92m0x%08x\033[m\n", name, value);
 
@@ -662,7 +662,7 @@ jump_cmd(state_t *state, token_list_t *tokens)
 {
 	token_list_t *it;
 	const char *name;
-	value_t *value;
+	avalue_t *value;
 
 	it = offset_token(tokens, 1);
 	if (!it)
@@ -673,7 +673,7 @@ jump_cmd(state_t *state, token_list_t *tokens)
 
 	name = it->token.string;
 
-	value = alist_find(state->bindings, KEY(name));
+	value = alist_find(state->bindings, AKEY(name));
 	if (!value)
 	{
 		printf("\033[33m%s\033[m is not bound.\n", name);

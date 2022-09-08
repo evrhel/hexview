@@ -12,8 +12,8 @@
 
 struct alist_node
 {
-	key_t key;
-	value_t value;
+	akey_t key;
+	avalue_t value;
 
 	struct alist_node *next;
 };
@@ -33,9 +33,9 @@ struct alist_s
 static void alist_free_node(alist_t *alist, struct alist_node *node);
 
 // find a node
-static struct alist_node *alist_find_node(alist_t *alist, struct alist_node *node, key_t key);
+static struct alist_node *alist_find_node(alist_t *alist, struct alist_node *node, akey_t key);
 
-static int default_compare_fn(key_t first, key_t second);  // does first == second
+static int default_compare_fn(void *first, void *second);  // does first == second
 static void *default_copy_fn(void *key);  // returns key
 static void default_free_fn(void *key);  // does nothing
 
@@ -160,10 +160,10 @@ alist_create(compare_fn keycompare, copy_fn keycopy, free_fn keyfree, copy_fn va
 }
 
 void
-alist_insert(alist_t *alist, key_t key, value_t value)
+alist_insert(alist_t *alist, akey_t key, avalue_t value)
 {
 	struct alist_node *node;
-	value_t nval;
+	avalue_t nval;
 
 	if (key == NULL) return;
 
@@ -189,8 +189,8 @@ alist_insert(alist_t *alist, key_t key, value_t value)
 	}
 }
 
-value_t *
-alist_find(alist_t *alist, key_t key)
+avalue_t *
+alist_find(alist_t *alist, akey_t key)
 {
 	struct alist_node *node;
 
@@ -269,7 +269,7 @@ alist_free_node(alist_t *alist, struct alist_node *node)
 }
 
 static struct alist_node *
-alist_find_node(alist_t *alist, struct alist_node *node, key_t key)
+alist_find_node(alist_t *alist, struct alist_node *node, akey_t key)
 {
 	if (!node)
 		return NULL;
@@ -280,7 +280,7 @@ alist_find_node(alist_t *alist, struct alist_node *node, key_t key)
 }
 
 static int
-default_compare_fn(key_t first, key_t second)
+default_compare_fn(void *first, void *second)
 {
 	return first == second;
 }
