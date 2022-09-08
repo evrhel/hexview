@@ -15,7 +15,6 @@ struct cmd
 {
 	cmd_exec_fn proc;
 	char name[8];
-	char desc[128];
 
 	struct cmd *next;
 };
@@ -30,7 +29,7 @@ struct state_s
 	struct cmd *first;  // linked list of avaliable commands
 };
 
-static void create_cmd(state_t *state, cmd_exec_fn proc, const char *name, const char *desc);
+static void create_cmd(state_t *state, cmd_exec_fn proc, const char *name);
 
 static int exit_cmd(state_t *state, token_list_t *tokens);
 static int tell_cmd(state_t *state, token_list_t *tokens);
@@ -55,15 +54,15 @@ create_state()
 	state->max_strlen = 32;
 	state->first = NULL;
 
-	create_cmd(state, &exit_cmd, "exit", "Exit the program");
-	create_cmd(state, &tell_cmd, "tell", "Display current offset and file size");
-	create_cmd(state, &seek_cmd, "seek", "Seek to a new location in the file");
-	create_cmd(state, &peek_cmd, "peek", "Display bytes at current location");
-	create_cmd(state, &vals_cmd, "vals", "Display values at current location");
-	create_cmd(state, &endi_cmd, "endi", "Change endianess mode");
-	create_cmd(state, &strl_cmd, "strl", "Set maximum string length");
-	create_cmd(state, &darr_cmd, "darr", "Display array at current location");
-	create_cmd(state, &help_cmd, "help", "Display help info");
+	create_cmd(state, &exit_cmd, "exit");
+	create_cmd(state, &tell_cmd, "tell");
+	create_cmd(state, &seek_cmd, "seek");
+	create_cmd(state, &peek_cmd, "peek");
+	create_cmd(state, &vals_cmd, "vals");
+	create_cmd(state, &endi_cmd, "endi");
+	create_cmd(state, &strl_cmd, "strl");
+	create_cmd(state, &darr_cmd, "darr");
+	create_cmd(state, &help_cmd, "help");
 
 	return state;
 }
@@ -140,7 +139,7 @@ run_string(state_t *state, const char *string)
 }
 
 static void
-create_cmd(state_t *state, cmd_exec_fn proc, const char *name, const char *desc)
+create_cmd(state_t *state, cmd_exec_fn proc, const char *name)
 {
 	struct cmd *cmd = malloc(sizeof(struct cmd));
 	if (cmd)
@@ -148,10 +147,8 @@ create_cmd(state_t *state, cmd_exec_fn proc, const char *name, const char *desc)
 		cmd->proc = proc;
 #if _WIN32
 		strcpy_s(cmd->name, sizeof(cmd->name), name);
-		strcpy_s(cmd->desc, sizeof(cmd->desc), desc);
 #elif __linux__
 		strncpy(cmd->name, name, sizeof(cmd->name));
-		strncpy(cmd->desc, desc, sizeof(cmd->desc));
 #endif
 
 		cmd->next = state->first;
@@ -588,6 +585,10 @@ help_cmd(state_t *state, token_list_t *tokens)
 	printf("strl <length>\n");
 	printf("        Sets the maximum string length to display when using vals, for both utf8\n");
 	printf("        and utf16 strings.\n");
+	printf("darr <type> <length>\n");
+	printf("        Interprets the current offset as an array with the give type and length.\n");
+	printf("        type can be one of: int8, uint8, int16, uint16, int32, uint32, int64,\n");
+	printf("        uint64, float32, float64, utf8, or utf16.\n");
 
 	return Continue;
 }

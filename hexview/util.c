@@ -2,6 +2,36 @@
 
 #include <stdio.h>
 #include <memory.h>
+#include <assert.h>
+
+struct alist_node
+{
+	key_t key;
+	value_t value;
+
+	struct alist_node *next;
+};
+
+struct alist_s
+{
+	compare_fn keycompare;
+	copy_fn keycopy;
+	free_fn keyfree;
+	copy_fn valuecopy;
+	free_fn valuefree;
+
+	struct alist_node *front;
+};
+
+// recursively free a node
+static void alist_free_node(alist_t *alist, struct alist_node *node);
+
+// find a node
+static struct alist_node *alist_find_node(alist_t *alist, struct alist_node *node, key_t key);
+
+static int default_compare_fn(key_t first, key_t second);  // does first == second
+static void *default_copy_fn(void *key);  // returns key
+static void default_free_fn(void *key);  // does nothing
 
 int
 to_native_endianess(const value_u *in, int max_read, int endianess, outvalues_t *const out)
@@ -101,4 +131,116 @@ equals_ignore_case(const char *first, const char *second)
 		return 0;
 	}
 	return *first == *second;
+}
+
+alist_t *
+alist_create(compare_fn keycompare, copy_fn keycopy, free_fn keyfree, copy_fn valuecopy, free_fn valuefree)
+{
+	alist_t *alist;
+
+	alist = malloc(sizeof(alist_t));
+	if (!alist)
+		return NULL;
+
+	alist->keycompare = keycompare ? keycompare : &default_compare_fn;
+	alist->keycopy = keycopy ? keycopy : &default_copy_fn;
+	alist->keyfree = keyfree ? keyfree : &default_free_fn;
+	alist->valuecopy = valuecopy ? valuecopy : &default_copy_fn;
+	alist->valuefree = valuefree ? valuefree : &default_free_fn;
+
+	alist->front = NULL;
+
+	return alist;
+}
+
+void
+alist_insert(alist_t *alist, key_t key, value_t value)
+{
+	struct alist_node *node;
+	value_t nval;
+
+	if (key == NULL) return;
+
+	node = alist_find_node(alist, alist->front, key);
+	if (!node)
+	{
+		// not found
+		node = malloc(sizeof(struct alist_node));
+		if (!node) return;
+		
+		node->key = alist->keycopy(key);
+		node->value = alist->valuecopy(value);
+
+		node->next = alist->front;
+		alist->front = node;
+	}
+	else
+	{
+		// replace value
+		nval = alist->valuecopy(value);
+		alist->valuefree(node->value);
+		node->value = nval;
+	}
+}
+
+value_t *
+alist_find(alist_t *alist, key_t key)
+{
+	struct alist_node *node;
+
+	if (!key)
+		return NULL;
+
+	node = alist_find_node(alist, alist->front, key);
+	return node ? &node->value : NULL;
+}
+
+void
+alist_free(alist_t *alist)
+{
+	if (alist)
+		alist_free_node(alist, alist->front);
+}
+
+static void
+alist_free_node(alist_t *alist, struct alist_node *node)
+{
+	assert(node->key != NULL);
+	alist->keyfree(node->key);
+
+	if (node->value) alist->valuefree(node->value);
+
+	if (node->next)
+		alist_free_node(alist, node->next);
+
+	free(node);
+}
+
+static struct alist_node *
+alist_find_node(alist_t *alist, struct alist_node *node, key_t key)
+{
+	if (!node)
+		return NULL;
+
+	if (alist->keycompare(node->key, key))
+		return node;
+	return alist_find_node(alist, node->next, key);
+}
+
+static int
+default_compare_fn(key_t first, key_t second)
+{
+	return first == second;
+}
+
+static void *
+default_copy_fn(void *key)
+{
+	return key;
+}
+
+static void
+default_free_fn(void *key)
+{
+	// do nothing
 }

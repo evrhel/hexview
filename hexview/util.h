@@ -3,6 +3,17 @@
 
 #include "defs.h"
 
+#define KEY(val) ((key_t)(val))
+#define VALUE(val) ((value_t)(val))
+
+typedef void *key_t;
+typedef void *value_t;
+typedef struct alist_s alist_t;
+
+typedef int(*compare_fn)(void *first, void *second);
+typedef void *(*copy_fn)(void *val);
+typedef void(*free_fn)(void *val);
+
 typedef union value_u value_u;
 union value_u
 {
@@ -17,6 +28,8 @@ union value_u
 
 	float32 f32;
 	float64 f64;
+
+	void *addr;
 };
 
 typedef struct outvalues_s outvalues_t;
@@ -103,5 +116,45 @@ int readline(char *const out, int maxcount);
 // Returns:
 // Nonzero if case-insensitively equal.
 int equals_ignore_case(const char *first, const char *second);
+
+// Create a new associative list.
+// Parameters:
+// - keycompare: Function used to compare two keys for equality. NULL
+// compares by value.
+// - keycopy: Function used to copy keys. NULL copies by value.
+// - keyfree: Function used to free keys. NULL does nothing.
+// - valuecopy: Function used to copy values. NULL copies by value.
+// - valuefree: Function used to free values. NULL does nothing.
+//
+// Returns:
+// A pointer to an alist_t on success and NULL on failure.
+alist_t *alist_create(compare_fn keycompare, copy_fn keycopy, free_fn keyfree, copy_fn valuecopy, free_fn valuefree);
+
+// Insert a key-value pairing into an associative list. If a pairing
+// alreadys exists, it will be overwritten.
+// Parameters:
+// - alist: The list to insert into.
+// - key: The key of the pairing. Cannot be NULL.
+// - value: The value of the pairing.
+void alist_insert(alist_t *alist, key_t key, value_t value);
+
+// Finds a value by its pair and returns a pointer to the value.
+// If the value is dereferenced, the value within the associative
+// list can be modified directly. Ensure correct copying/freeing
+// is used if custom copy/free functions were specified when
+// calling alist_create.
+// Parameters:
+// - alist: The list to find the pairing in.
+// - key: The key of the pairing.
+//
+// Returns:
+// A pointer to the value associated with that key, or NULL if
+// no such pairing exists.
+value_t *alist_find(alist_t *alist, key_t key);
+
+// Frees an alist_t allocated with alist_create.
+// Parameters:
+// - alist: The list to free, can be NULL.
+void alist_free(alist_t *alist);
 
 #endif
