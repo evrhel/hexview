@@ -45,3 +45,5 @@ Once a file is loaded, a command interface will be avaliable. To see commands, r
 - `endi [little|big|native]`: Sets the endianess mode. The `vals` command will use this to change how it should interpret multi-byte values. `little`, `big`, and `native` represent little endian, big endian, and the local machine's endianess, respectively.
 - `strl <length>`: Sets the maximum string length to display when the `vals` string is ran to `<length>`.
 - `darr <type> <length>`: Interprets the current offset as an array of length `<length>` containing values of type `<type>`. `<type>` can be one of: `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `int64`, `uint64`, `float32`, `float64`, `utf8`, or `utf16`.
+- `bind <name> <value, optional>`: Binds a name to an integer value. The binding then can be subsequently used in any future jump calls. If `<value>` is not specified, the binding will be set to the current file offset. If a binding with `<name>` already exists, the old binding will be overwritten.
+- `jump <name>`: Jumps to a file offset previously saved using bind. If the binding does not exist, nothing will change.

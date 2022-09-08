@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define HEXVIEW_VERSION "1.0.0-rc4"
+#define HEXVIEW_VERSION "1.0.0-rc5"
 
 struct command_line
 {

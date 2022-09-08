@@ -22,7 +22,8 @@ struct cmd
 struct state_s
 {
 	file_t *file;
-	int off;
+	alist_t *bindings;
+	unsigned int off;
 	int current_endianess;
 	int max_strlen;
 
@@ -40,6 +41,8 @@ static int endi_cmd(state_t *state, token_list_t *tokens);
 static int strl_cmd(state_t *state, token_list_t *tokens);
 static int darr_cmd(state_t *state, token_list_t *tokens);
 static int help_cmd(state_t *state, token_list_t *tokens);
+static int bind_cmd(state_t *state, token_list_t *tokens);
+static int jump_cmd(state_t *state, token_list_t *tokens);
 
 state_t *
 create_state()
@@ -49,6 +52,13 @@ create_state()
 		return NULL;
 
 	state->file = NULL;
+	state->bindings = alist_create(STRCMP, STRCPY, STRFREE, NULL, NULL);
+	if (!state->bindings)
+	{
+		free(state);
+		return NULL;
+	}
+
 	state->off = 0;
 	state->current_endianess = NATIVE_ENDIANESS;
 	state->max_strlen = 32;
@@ -63,6 +73,8 @@ create_state()
 	create_cmd(state, &strl_cmd, "strl");
 	create_cmd(state, &darr_cmd, "darr");
 	create_cmd(state, &help_cmd, "help");
+	create_cmd(state, &bind_cmd, "bind");
+	create_cmd(state, &jump_cmd, "jump");
 
 	return state;
 }
@@ -589,6 +601,79 @@ help_cmd(state_t *state, token_list_t *tokens)
 	printf("        Interprets the current offset as an array with the give type and length.\n");
 	printf("        type can be one of: int8, uint8, int16, uint16, int32, uint32, int64,\n");
 	printf("        uint64, float32, float64, utf8, or utf16.\n");
+	printf("bind <name> <value, optional>\n");
+	printf("        Binds a name to an integer value. The binding can then be subsequently\n");
+	printf("        used in any future jump calls. If <value> is not specified, the binding\n");
+	printf("        will be set to the current offset. If a binding with <name> already exists,\n");
+	printf("        the old binding will be overwritten.\n");
+	printf("jump <name>\n");
+	printf("        Jumps to a file offset previously saved using bind. If the binding does not\n");
+	printf("        exist, nothing will change.\n");
+
+	return Continue;
+}
+
+static int
+bind_cmd(state_t *state, token_list_t *tokens)
+{
+	token_list_t *it;
+	const char *name;
+	unsigned int value;
+
+	it = offset_token(tokens, 1);
+	if (!it)
+	{
+		printf("Invalid usage, use 'help' for help.\n");
+		return Continue;
+	}
+
+	name = it->token.string;
+
+	it = offset_token(it, 1);
+	value = it ? it->token.integer : state->off;
+
+	alist_insert(state->bindings, KEY(name), VALUE(value));
+
+	printf("Bound '%s' -> 0x%08x\n", name, value);
+
+	return Continue;
+}
+
+static int
+jump_cmd(state_t *state, token_list_t *tokens)
+{
+	token_list_t *it;
+	const char *name;
+	value_t *value;
+
+	it = offset_token(tokens, 1);
+	if (!it)
+	{
+		printf("Invalid usage, use 'help' for help.\n");
+		return Continue;
+	}
+
+	name = it->token.string;
+
+	value = alist_find(state->bindings, KEY(name));
+	if (!value)
+	{
+		printf("'%s' is not bound.\n", name);
+		return Continue;
+	}
+
+	state->off = *(unsigned int *)value;
+
+	if (state->off < 0)
+		state->off = 0;
+	else if (state->off >= state->file->size)
+	{
+		state->off = state->file->size - 1;
+		if (state->off < 0)
+			state->off = 0;
+	}
+
+	printf("Jumped to 0x%08x\n", state->off);
 
 	return Continue;
 }

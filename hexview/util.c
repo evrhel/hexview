@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include <assert.h>
+#include <string.h>
 
 struct alist_node
 {
@@ -200,6 +201,30 @@ alist_free(alist_t *alist)
 {
 	if (alist)
 		alist_free_node(alist, alist->front);
+}
+
+int __string_compare_fn(const char *first, const char *second)
+{
+	return !strcmp(first, second);
+}
+
+char *__string_copy_fn(const char *value)
+{
+	char *result;
+	int len;
+
+	if (!value)
+		return NULL;
+
+	len = strlen(value);
+	result = malloc(len + 1);
+	if (!result)
+		return NULL;
+	result[len] = 0;
+
+	memcpy(result, value, len);
+
+	return result;
 }
 
 static void

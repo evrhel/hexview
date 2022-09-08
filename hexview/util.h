@@ -5,6 +5,9 @@
 
 #define KEY(val) ((key_t)(val))
 #define VALUE(val) ((value_t)(val))
+#define STRCMP ((compare_fn)&__string_compare_fn)
+#define STRCPY ((copy_fn)&__string_copy_fn)
+#define STRFREE ((copy_fn)&free)
 
 typedef void *key_t;
 typedef void *value_t;
@@ -156,5 +159,8 @@ value_t *alist_find(alist_t *alist, key_t key);
 // Parameters:
 // - alist: The list to free, can be NULL.
 void alist_free(alist_t *alist);
+
+int __string_compare_fn(const char *first, const char *second);
+char *__string_copy_fn(const char *value);
 
 #endif
