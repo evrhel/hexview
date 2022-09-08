@@ -7,7 +7,7 @@
 #define VALUE(val) ((value_t)(val))
 #define STRCMP ((compare_fn)&__string_compare_fn)
 #define STRCPY ((copy_fn)&__string_copy_fn)
-#define STRFREE ((copy_fn)&free)
+#define STRFREE ((free_fn)&free)
 
 typedef void *key_t;
 typedef void *value_t;

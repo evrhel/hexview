@@ -6,8 +6,8 @@
 typedef struct file_s file_t;
 struct file_s
 {
-	byte *data;  // Pointer to the start of the file's data. Addressing valid from [data, data + size).
-	int size;    // Size of the file.
+	byte *data;			// Pointer to the start of the file's data. Addressing valid from [data, data + size).
+	unsigned int size;	// Size of the file.
 
 	byte reserved[1];
 };

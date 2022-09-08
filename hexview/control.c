@@ -8,6 +8,7 @@
 #include "util.h"
 
 #define BYTES_TO_DISPLAY 128
+#define sayhelp printf("Invalid usage, try \033[95mhelp\033[m.\n")
 
 typedef int(*cmd_exec_fn)(state_t *, token_list_t *);
 
@@ -123,8 +124,8 @@ open_file_on_state(state_t *state, const char *filename)
 	else
 		snprintf(sizestr, sizeof(sizestr), "%d MiB", state->file->size / 1024 / 1024);
 
-	printf("File: '%s'\n", filename);
-	printf("Size: %s [0x00000000, 0x%08x)\n", sizestr, state->file->size);
+	printf("File: \033[33m'%s'\033[m\n", filename);
+	printf("Size: \033[94m%s\033[m [\033[92m0x00000000\033[m, \033[92m0x%08x\033[m)\n", sizestr, state->file->size);
 	printf("Mode is %s endian.\n", state->current_endianess == LittleEndian ? "little" : "big");
 
 	return 1;
@@ -138,7 +139,7 @@ run_string(state_t *state, const char *string)
 
 	tokens = tokenize(string);
 	if (!tokens)
-		return Exit;
+		return Continue;
 
 	for (cmd = state->first; cmd; cmd = cmd->next)
 	{
@@ -177,7 +178,7 @@ exit_cmd(state_t *state, token_list_t *tokens)
 static int
 tell_cmd(state_t *state, token_list_t *tokens)
 {
-	printf("Offset: 0x%08x\nSize:   0x%08x\n", state->off, state->file->size);
+	printf("Offset: \033[92m0x%08x\033[m\nSize:   \033[92m0x%08x\033[m\n", state->off, state->file->size);
 	return Continue;
 }
 
@@ -202,7 +203,7 @@ seek_cmd(state_t *state, token_list_t *tokens)
 	otok = offset_token(tokens, 1);
 	if (!otok)
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -248,7 +249,7 @@ seek_cmd(state_t *state, token_list_t *tokens)
 			state->off = 0;
 	}
 
-	printf("Now looking at offset 0x%08x\n", state->off);
+	printf("Now looking at offset \033[92m0x%08x\033[m\n", state->off);
 
 	return Continue;
 }
@@ -256,27 +257,31 @@ seek_cmd(state_t *state, token_list_t *tokens)
 static int
 peek_cmd(state_t *state, token_list_t *tokens)
 {
-	int i, at;
+	unsigned int i, at;
+	unsigned int m;
 
 	printf("           ");
+	printf("\033[4m");
 	for (i = 0; i < 16; i++)
 		printf(" %02hhx", i);
-	printf("\n");
+	printf("\033[m\n");
 
 	for (i = 0; i < BYTES_TO_DISPLAY; i++)
 	{
 		at = state->off + i;
+		m = i % 16;
 		if (at >= state->file->size)
 		{
-			printf("<eof>");
+			for (i = m; i < 16; i++)
+				printf(" \033[41m??\033[m");
 			break;
 		}
 
-		if (i % 16 == 0)
+		if (m == 0)
 		{
 			if (i > 0)
 				putchar('\n');
-			printf("0x%08x:", at);
+			printf("\033[90m0x%08x \033[m", at);
 		}
 		printf(" %02hhx", state->file->data[at]);
 	}
@@ -327,25 +332,25 @@ vals_cmd(state_t *state, token_list_t *tokens)
 		goto floats;
 
 		below16:
-		printf("int16:   ?\n");
-		printf("uint16:  ?\n");
+		printf("int16:   \033[41m?\033[m\n");
+		printf("uint16:  \033[41m?\033[m\n");
 		below32:
-		printf("int32:   ?\n");
-		printf("uint32:  ?\n");
+		printf("int32:   \033[41m?\033[m\n");
+		printf("uint32:  \033[41m?\033[m\n");
 		below64:
-		printf("int64:   ?\n");
-		printf("uint64:  ?\n");
+		printf("int64:   \033[41m?\033[m\n");
+		printf("uint64:  \033[41m?\033[m\n");
 
 		floats:
 		if (read < 4)
 		{
-			printf("float32: ?\n");
-			printf("float64: ?\n");;
+			printf("float32: \033[41m?\033[m\n");
+			printf("float64: \033[41m?\033[m\n");;
 		}
 		else
 		{
 			printf("float32: %g\n", (double)valout.f32);
-			if (read < 8) printf("float64: ?\n");
+			if (read < 8) printf("float64: \033[41m?\033[m\n");
 			else printf("float64: %g\n", (double)valout.f64);
 		}
 
@@ -385,7 +390,7 @@ endi_cmd(state_t *state, token_list_t *tokens)
 	it = offset_token(tokens, 1);
 	if (!it)
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -421,7 +426,7 @@ strl_cmd(state_t *state, token_list_t *tokens)
 	it = offset_token(tokens, 1);
 	if (!it)
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -447,7 +452,7 @@ darr_cmd(state_t *state, token_list_t *tokens)
 	it = offset_token(tokens, 1);
 	if (!it)
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -477,7 +482,7 @@ darr_cmd(state_t *state, token_list_t *tokens)
 		elemtype = Utf16;
 	else
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -508,7 +513,7 @@ darr_cmd(state_t *state, token_list_t *tokens)
 	it = offset_token(it, 1);
 	if (!it)
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -579,36 +584,49 @@ darr_cmd(state_t *state, token_list_t *tokens)
 static int
 help_cmd(state_t *state, token_list_t *tokens)
 {
-	printf("exit    Exit the program\n");
-	printf("tell    Display current offset and file size\n");
-	printf("seek [<offset>|end]\n");
-	printf("        Seeks to a new location in the file.Supports decimal, hexadecimal, and\n");
-	printf("        octal absolute and relative offsets. Use none, '0x', or '0' prefixes to\n");
-	printf("        specify decimal, hexadecimal, and octal vals, respectively. Prefix with\n");
-	printf("        '+' or '-' to do a relative seek. Use 'end' to seek to the end of the\n");
-	printf("        file while still displaying as many bytes as possible.\n");
-	printf("peek    Displays bytes at the current seek location.\n");
-	printf("vals    Displays a list of common byte and multi-byte interpretations in the\n");
-	printf("        current endianess mode.\n");
-	printf("endi [little|big|native]\n");
-	printf("        Sets the endianess mode; how vals should interpret multi-byte\n");
-	printf("        values. Native endianess means use the endianess of the\n");
-	printf("        local machine.\n");
-	printf("strl <length>\n");
-	printf("        Sets the maximum string length to display when using vals, for both utf8\n");
-	printf("        and utf16 strings.\n");
-	printf("darr <type> <length>\n");
-	printf("        Interprets the current offset as an array with the give type and length.\n");
-	printf("        type can be one of: int8, uint8, int16, uint16, int32, uint32, int64,\n");
-	printf("        uint64, float32, float64, utf8, or utf16.\n");
-	printf("bind <name> <value, optional>\n");
-	printf("        Binds a name to an integer value. The binding can then be subsequently\n");
-	printf("        used in any future jump calls. If <value> is not specified, the binding\n");
-	printf("        will be set to the current offset. If a binding with <name> already exists,\n");
-	printf("        the old binding will be overwritten.\n");
-	printf("jump <name>\n");
-	printf("        Jumps to a file offset previously saved using bind. If the binding does not\n");
-	printf("        exist, nothing will change.\n");
+	printf("\033[95mexit\033[m\n");
+	printf(" Exit the program\n\n");
+
+	printf("\033[95mtell\033[m\n");
+	printf(" Display current offset and file size\n\n");
+
+	printf("\033[95mseek\033[m [\033[92m<offset>\033[m|\033[33mend\033[m]\n");
+	printf(" Seeks to a new location in the file. Supports decimal, hexadecimal, and\n");
+	printf(" octal absolute and relative offsets. Use none, '0x', or '0' prefixes to\n");
+	printf(" specify decimal, hexadecimal, and octal vals, respectively. Prefix with\n");
+	printf(" '+' or '-' to do a relative seek. Use 'end' to seek to the end of the\n");
+	printf(" file while still displaying as many bytes as possible.\n\n");
+
+	printf("\033[95mpeek\033[m\n");
+	printf(" Displays bytes at the current seek location.\n\n");
+
+	printf("\033[95mvals\033[m\n");
+	printf(" Displays a list of common byte and multi-byte interpretations in the\n");
+	printf(" current endianess mode.\n\n");
+
+	printf("\033[95mendi\033[m [\033[33mlittle\033[m|\033[33mbig\033[m|\033[33mnative\033[m]\n");
+	printf(" Sets the endianess mode; how vals should interpret multi-byte\n");
+	printf(" values. Native endianess means use the endianess of the\n");
+	printf(" local machine.\n\n");
+
+	printf("\033[95mstrl\033[m \033[92m<length>\033[m\n");
+	printf(" Sets the maximum string length to display when using vals, for both utf8\n");
+	printf(" and utf16 strings.\n\n");
+
+	printf("\033[95mdarr\033[m \033[36m<type>\033[m \033[92m<length>\033[m\n");
+	printf(" Interprets the current offset as an array with the give type and length.\n");
+	printf(" type can be one of: int8, uint8, int16, uint16, int32, uint32, int64,\n");
+	printf(" uint64, float32, float64, utf8, or utf16.\n\n");
+
+	printf("\033[95mbind\033[m \033[36m<name>\033[m \033[36m<value, optional>\033[m\n");
+	printf(" Binds a name to an integer value. The binding can then be subsequently\n");
+	printf(" used in any future jump calls. If <value> is not specified, the binding\n");
+	printf(" will be set to the current offset. If a binding with <name> already exists,\n");
+	printf(" the old binding will be overwritten.\n\n");
+
+	printf("\033[95mjump\033[m \033[36m<name>\033[m\n");
+	printf(" Jumps to a file offset previously saved using bind. If the binding does not\n");
+	printf(" exist, nothing will change.\n");
 
 	return Continue;
 }
@@ -623,7 +641,7 @@ bind_cmd(state_t *state, token_list_t *tokens)
 	it = offset_token(tokens, 1);
 	if (!it)
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -634,7 +652,7 @@ bind_cmd(state_t *state, token_list_t *tokens)
 
 	alist_insert(state->bindings, KEY(name), VALUE(value));
 
-	printf("Bound '%s' -> 0x%08x\n", name, value);
+	printf("Bound \033[33m%s\033[m -> \033[92m0x%08x\033[m\n", name, value);
 
 	return Continue;
 }
@@ -649,7 +667,7 @@ jump_cmd(state_t *state, token_list_t *tokens)
 	it = offset_token(tokens, 1);
 	if (!it)
 	{
-		printf("Invalid usage, use 'help' for help.\n");
+		sayhelp;
 		return Continue;
 	}
 
@@ -658,7 +676,7 @@ jump_cmd(state_t *state, token_list_t *tokens)
 	value = alist_find(state->bindings, KEY(name));
 	if (!value)
 	{
-		printf("'%s' is not bound.\n", name);
+		printf("\033[33m%s\033[m is not bound.\n", name);
 		return Continue;
 	}
 
@@ -673,7 +691,7 @@ jump_cmd(state_t *state, token_list_t *tokens)
 			state->off = 0;
 	}
 
-	printf("Jumped to 0x%08x\n", state->off);
+	printf("Jumped to \033[92m0x%08x\033[m\n", state->off);
 
 	return Continue;
 }

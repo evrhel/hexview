@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define HEXVIEW_VERSION "1.0.0-rc5"
+#define HEXVIEW_VERSION "1.0.0-rc6"
 
 struct command_line
 {
@@ -38,7 +38,7 @@ main(int argc, char *argv[])
 		return 0;
 	}
 
-	printf("Use 'help' for help.\n");
+	printf("Use \033[95mhelp\033[m for help.\n");
 	do
 	{
 		printf("> ");
@@ -94,8 +94,13 @@ static void
 print_help(int full)
 {
 	printf("Usage: hexview [options...] <filename>\n");
-	if (!full) return;
+	if (!full)
+	{
+		printf("Try hexview --help\n");
+		return;
+	}
 
+	printf("Where <filename> is the file to view.\n");
 	printf("Where options include:\n");
 	printf(" --help -h      Display this message.\n");
 	printf(" --version -v   Display version information.\n");

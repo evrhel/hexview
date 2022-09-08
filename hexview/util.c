@@ -5,6 +5,11 @@
 #include <assert.h>
 #include <string.h>
 
+#if _WIN32
+#include <Windows.h>
+#elif __linux__
+#endif
+
 struct alist_node
 {
 	key_t key;
@@ -203,12 +208,34 @@ alist_free(alist_t *alist)
 		alist_free_node(alist, alist->front);
 }
 
-int __string_compare_fn(const char *first, const char *second)
+void
+set_console_color(int color)
+{
+#if _WIN32
+
+#elif __linux__
+
+#endif
+}
+
+void
+set_console_style(int style)
+{
+#if _WIN32
+
+#elif __linux__
+
+#endif
+}
+
+int
+__string_compare_fn(const char *first, const char *second)
 {
 	return !strcmp(first, second);
 }
 
-char *__string_copy_fn(const char *value)
+char *
+__string_copy_fn(const char *value)
 {
 	char *result;
 	int len;
