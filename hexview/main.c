@@ -4,7 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#define HEXVIEW_VERSION "1.0.0-rc7"
+#if _WIN32
+#include <Windows.h>
+#endif
+
+#define HEXVIEW_VERSION "1.0.0-rc8"
 
 struct command_line
 {
@@ -23,6 +27,22 @@ main(int argc, char *argv[])
 	char line[256];
 	int result;
 
+#if _WIN32
+	DWORD dwNewMode;
+	DWORD dwInitMode;
+	HANDLE hStdoutHandle;
+
+	hStdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (hStdoutHandle == INVALID_HANDLE_VALUE) return GetLastError();
+
+	dwInitMode = 0;
+	if (!GetConsoleMode(hStdoutHandle, &dwInitMode)) return GetLastError();
+
+	// new mode to enable ANSI escape codes for color
+	dwNewMode = dwInitMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+	if (!SetConsoleMode(hStdoutHandle, dwNewMode)) return GetLastError();
+#endif
+
 	if (parse_command_line(argc, argv, &command_line))
 		return 0;
 
@@ -30,24 +50,31 @@ main(int argc, char *argv[])
 	if (!state)
 	{
 		printf("Initialization failed.\n");
-		return 0;
+		goto cleanup;
 	}
 
 	if (!open_file_on_state(state, argv[1]))
 	{
 		printf("Failed to open file.\n");
-		return 0;
+		goto cleanup;
 	}
 
 	printf("Use \033[95mhelp\033[m for help.\n");
 	do
 	{
 		printf("> ");
+		fflush(stdout);
 		readline(line, sizeof(line));
 		result = run_string(state, line);
 	} while (result == Continue);
 
 	destroy_state(state);
+
+cleanup:
+#if _WIN32
+	// restore initial console mode
+	if (!SetConsoleMode(hStdoutHandle, dwInitMode)) return GetLastError();
+#endif
 
 	return 0;
 }

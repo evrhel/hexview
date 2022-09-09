@@ -259,6 +259,8 @@ peek_cmd(state_t *state, token_list_t *tokens)
 {
 	unsigned int i, at;
 	unsigned int m;
+	unsigned int j;
+	unsigned char c;
 
 	printf("           ");
 	printf("\033[4m");
@@ -272,20 +274,54 @@ peek_cmd(state_t *state, token_list_t *tokens)
 		m = i % 16;
 		if (at >= state->file->size)
 		{
-			for (i = m; i < 16; i++)
+			for (j = m; j < 16; j++)
 				printf(" \033[41m??\033[m");
+
+			printf("   ");
+			for (j = 0; j < m; j++)
+			{
+				c = state->file->data[state->off + i + j - m];
+				if (c < 0x20 || c == 0x7f)
+					putchar('.');
+				else
+					putchar(c);
+			}
 			break;
 		}
 
 		if (m == 0)
 		{
 			if (i > 0)
+			{
+				printf("   ");
+				for (j = 0; j < 16; j++)
+				{
+					c = state->file->data[state->off + i + j - 16];
+					if (c < 0x20 || c == 0x7f)
+						putchar('.');
+					else
+						putchar(c);
+				}
 				putchar('\n');
+			}
 			printf("\033[90m0x%08x \033[m", at);
 		}
 		printf(" %02hhx", state->file->data[at]);
 	}
-	printf("\n");
+
+	if (at < state->file->size)
+	{
+		printf("   ");
+		for (j = 0; j < 16; j++)
+		{
+			c = state->file->data[state->off + i + j - 16];
+			if (c < 0x20 || c == 0x7f)
+				putchar('.');
+			else
+				putchar(c);
+		}
+	}
+	putchar('\n');
 
 	return Continue;
 }
