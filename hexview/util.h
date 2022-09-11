@@ -67,8 +67,8 @@ struct outvalues_s
 
 	union
 	{
-		utf8_t *utf8;
-		utf16_t *utf16;
+		char8_t *char8;
+		char16_t *char16;
 	};
 };
 

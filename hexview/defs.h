@@ -15,8 +15,12 @@ enum
 #ifdef _WIN32
 typedef unsigned __int8 byte;
 
-typedef char utf8_t;
-typedef wchar_t utf16_t;
+typedef char char8_t;
+#ifdef _WCHAR_T_DEFINED
+typedef wchar_t char16_t;
+#else
+typedef unsigned short char16_t;
+#endif
 
 typedef __int8 int8;
 typedef unsigned __int8 uint8;
@@ -33,8 +37,13 @@ typedef double float64;
 
 typedef unsigned char byte;
 
-typedef char utf8_t;
-typedef wchar_t utf16_t;
+typedef char char8_t;
+
+#if __WCHAR_MAX__ > 0x10000
+typedef short unsigned int char16_t;
+#else
+typedef wchar_t char16_t;
+#endif
 
 typedef char int8;
 typedef unsigned char uint8;
@@ -56,7 +65,7 @@ enum
 	Int32, Uint32,
 	Int64, Uint64,
 	Float32, Float64,
-	Utf8, Utf16
+	Char8, Char16
 };
 
 #endif

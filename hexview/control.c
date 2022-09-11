@@ -332,7 +332,7 @@ vals_cmd(state_t *state, token_list_t *tokens)
 	value_u *valin;
 	outvalues_t valout;
 	int read;
-	union { utf8_t *cursor8; utf16_t *cursor16; } strs;
+	union { char8_t *cursor8; char16_t *cursor16; } strs;
 
 	valin = (value_u *)(state->file->data + state->off);
 	read = to_native_endianess(valin, state->file->size - state->off, state->current_endianess, &valout);
@@ -390,8 +390,8 @@ vals_cmd(state_t *state, token_list_t *tokens)
 			else printf("float64: %g\n", (double)valout.f64);
 		}
 
-		printf("utf8:    ");
-		strs.cursor8 = valout.utf8;
+		printf("char8:    ");
+		strs.cursor8 = valout.char8;
 		for (long i = 0; i < state->max_strlen && i < read; i++, strs.cursor8++)
 		{
 			if (!*strs.cursor8)
@@ -400,8 +400,8 @@ vals_cmd(state_t *state, token_list_t *tokens)
 		}
 		printf("\n");
 
-		printf("utf16:   ");
-		strs.cursor16 = valout.utf16;
+		printf("char16:   ");
+		strs.cursor16 = valout.char16;
 		for (long i = 0; i < state->max_strlen && i < read / 2; i++, strs.cursor16++)
 		{
 			if (!*strs.cursor16)
@@ -512,10 +512,10 @@ darr_cmd(state_t *state, token_list_t *tokens)
 		elemtype = Float32;
 	else if (!strcmp(it->token.string, "float64") || !strcmp(it->token.string, "double"))
 		elemtype = Float64;
-	else if (!strcmp(it->token.string, "utf8"))
-		elemtype = Utf8;
-	else if (!strcmp(it->token.string, "utf16"))
-		elemtype = Utf16;
+	else if (!strcmp(it->token.string, "char8"))
+		elemtype = Char8;
+	else if (!strcmp(it->token.string, "char16"))
+		elemtype = Char16;
 	else
 	{
 		sayhelp;
@@ -526,12 +526,12 @@ darr_cmd(state_t *state, token_list_t *tokens)
 	{
 	case Int8:
 	case Uint8:
-	case Utf8:
+	case Char8:
 		elemsize = 1;
 		break;
 	case Int16:
 	case Uint16:
-	case Utf16:
+	case Char16:
 		elemsize = 2;
 		break;
 	case Int32:
@@ -603,11 +603,11 @@ darr_cmd(state_t *state, token_list_t *tokens)
 		case Float64:
 			printf(" %g", (double)outval.f64);
 			break;
-		case Utf8:
-			printf(" %c", *outval.utf8);
+		case Char8:
+			printf(" %c", *outval.char8);
 			break;
-		case Utf16:
-			wprintf(L" %lc", *outval.utf16);
+		case Char16:
+			wprintf(L" %lc", *outval.char16);
 			break;
 		}
 	}
@@ -652,7 +652,7 @@ help_cmd(state_t *state, token_list_t *tokens)
 	printf("\033[95mdarr\033[m \033[36m<type>\033[m \033[92m<length>\033[m\n");
 	printf(" Interprets the current offset as an array with the give type and length.\n");
 	printf(" type can be one of: int8, uint8, int16, uint16, int32, uint32, int64,\n");
-	printf(" uint64, float32, float64, utf8, or utf16.\n\n");
+	printf(" uint64, float32, float64, char8, or char16.\n\n");
 
 	printf("\033[95mbind\033[m \033[36m<name>\033[m \033[36m<value, optional>\033[m\n");
 	printf(" Binds a name to an integer value. The binding can then be subsequently\n");

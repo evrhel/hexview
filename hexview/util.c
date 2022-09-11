@@ -48,7 +48,7 @@ to_native_endianess(const value_u *in, int max_read, int endianess, outvalues_t 
 	toread = max_read < sizeof(value_u) ? max_read : sizeof(value_u);
 
 	memset(out, 0, sizeof(outvalues_t));
-	out->utf8 = (utf8_t *)in;
+	out->char8 = (char8_t *)in;
 
 	switch (endianess)
 	{
