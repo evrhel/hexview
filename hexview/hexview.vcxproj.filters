@@ -6,6 +6,7 @@
     <ClCompile Include="tokenizer.c" />
     <ClCompile Include="util.c" />
     <ClCompile Include="control.c" />
+    <ClCompile Include="pattern.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="file.h" />
@@ -13,5 +14,6 @@
     <ClInclude Include="tokenizer.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="control.h" />
+    <ClInclude Include="pattern.h" />
   </ItemGroup>
 </Project>

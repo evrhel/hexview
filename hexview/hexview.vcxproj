@@ -147,11 +147,13 @@
     <ClCompile Include="control.c" />
     <ClCompile Include="file.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="pattern.c" />
     <ClCompile Include="tokenizer.c" />
     <ClCompile Include="util.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="control.h" />
+    <ClInclude Include="pattern.h" />
     <ClInclude Include="tokenizer.h" />
     <ClInclude Include="defs.h" />
     <ClInclude Include="file.h" />

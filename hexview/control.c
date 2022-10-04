@@ -6,8 +6,10 @@
 #include "tokenizer.h"
 #include "file.h"
 #include "util.h"
+#include "pattern.h"
 
 #define BYTES_TO_DISPLAY 128
+#define MAX_FIND_ITERATIONS 8
 #define sayhelp printf("Invalid usage, try \033[95mhelp\033[m.\n")
 
 typedef int(*cmd_exec_fn)(state_t *, token_list_t *);
@@ -44,6 +46,7 @@ static int darr_cmd(state_t *state, token_list_t *tokens);
 static int help_cmd(state_t *state, token_list_t *tokens);
 static int bind_cmd(state_t *state, token_list_t *tokens);
 static int jump_cmd(state_t *state, token_list_t *tokens);
+static int find_cmd(state_t *state, token_list_t *tokens);
 
 state_t *
 create_state()
@@ -76,6 +79,7 @@ create_state()
 	create_cmd(state, &help_cmd, "help");
 	create_cmd(state, &bind_cmd, "bind");
 	create_cmd(state, &jump_cmd, "jump");
+	create_cmd(state, &find_cmd, "find");
 
 	return state;
 }
@@ -664,6 +668,33 @@ help_cmd(state_t *state, token_list_t *tokens)
 	printf(" Jumps to a file offset previously saved using bind. If the binding does not\n");
 	printf(" exist, nothing will change.\n");
 
+	printf("\033[95mfind\033[m \033[96mpattern...\033[m\n");
+	printf(" Searches for a pattern in the file at the current offset. pattern...\n");
+	printf(" specifies the pattern to search for in the file. It takes the form of\n");
+	printf(" a space-delimeted value to search for. Each value should be its own\n");
+	printf(" argument, the entire pattern should not be one string. For each pattern\n");
+	printf(" argument, the argument can be one of the following:\n");
+	printf("  ?[(nothing)|<count>]\n");
+	printf("               - always match, <count> can be used to match more than\n");
+	printf("                 one byte.\n");
+	printf("  <byte>       - match a single byte value.\n");
+	printf("  i8<int8>     - match a int8.\n");
+	printf("  ui8<uint8>   - match a uint8\n");
+	printf("  i16<int16>   - match a int16\n");
+	printf("  ui16<uint16> - match a uint16\n");
+	printf("  i32<int32>   - match a int32\n");
+	printf("  ui32<uint16> - match a uint32\n");
+	printf("  i64<int64>   - match a int64\n");
+	printf("  ui64<uint64> - match a uint64\n");
+	printf("  f32<int16>   - match a float32\n");
+	printf("  f64<uint16>  - match a float64\n");
+	printf("  c<char>      - match a single char8 character.\n");
+	printf("  wc<char>     - match a single char16 character.\n");
+	printf("  s<string>    - match a sequence of char8 characters.\n");
+	printf("  sn<string>   - match a null-terminated char8 string.\n");
+	printf("  ws<string>   - match a sequence of char16 characters.\n");
+	printf("  wsn<string>  - match a null-terminated char16 string.\n");
+
 	return Continue;
 }
 
@@ -728,6 +759,53 @@ jump_cmd(state_t *state, token_list_t *tokens)
 	}
 
 	printf("Jumped to \033[92m0x%08x\033[m\n", state->off);
+
+	return Continue;
+}
+
+static int
+find_cmd(state_t *state, token_list_t *tokens)
+{
+	token_list_t *it;
+	pattern_t *pattern;
+	int result;
+	unsigned int count;
+	unsigned int off;
+	unsigned int stateoff;
+	unsigned int itcount;
+
+	it = offset_token(tokens, 1);
+	if (!it)
+	{
+		sayhelp;
+		return Continue;
+	}
+
+	pattern = pattern_generate(it, &count);
+	if (!pattern)
+	{
+		printf("Malformed pattern.\n");
+		return Continue;
+	}
+
+	stateoff = 0;
+	for (itcount = 0; itcount < MAX_FIND_ITERATIONS; itcount++)
+	{
+		result = pattern_find_next(pattern, state->file->data + state->off + stateoff, state->file->size - (state->off + stateoff), &off);
+		if (result)
+			printf("Matched \033[92m%u\033[m bytes at \033[92m0x%08x\033[m\n", count, state->off + off + stateoff);
+		else
+			break;
+
+		stateoff += off + 1;
+	}
+
+	if (itcount == 0)
+		printf("No match.\n");
+	else if (itcount == MAX_FIND_ITERATIONS)
+		printf("Reached max find iterations, more matches may exist...\n");
+
+	pattern_free(pattern);
 
 	return Continue;
 }

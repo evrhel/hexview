@@ -47,3 +47,22 @@ Once a file is loaded, a command interface will be avaliable. To see commands, r
 - `darr <type> <length>`: Interprets the current offset as an array of length `<length>` containing values of type `<type>`. `<type>` can be one of: `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`, `int64`, `uint64`, `float32`, `float64`, `utf8`, or `utf16`.
 - `bind <name> <value, optional>`: Binds a name to an integer value. The binding then can be subsequently used in any future jump calls. If `<value>` is not specified, the binding will be set to the current file offset. If a binding with `<name>` already exists, the old binding will be overwritten.
 - `jump <name>`: Jumps to a file offset previously saved using bind. If the binding does not exist, nothing will change.
+- `find pattern...`: Searches for a pattern in the file at the current offset. `pattern...` specifies the pattern to search for in the file. It takes the form of a space-delimeted value to search for. Each value should be its own argument, the entire pattern should not be one string. For each pattern argument, the argument can be one of the following:
+	- `?[(nothing)|<count>]`: Always match. `<count>` can be used to match more than one byte.
+	- `<byte>`: Match a single byte value.
+	- `i8<int8>`: Match int8.
+	- `ui8<uint8>`: Match uint8.
+	- `i16<int16>`: Match int16.
+	- `ui16<uint16>`: Match uint16.
+	- `i32<int32>`: Match int32.
+	- `ui32<uint32>`: Match uint32.
+	- `i64<int64>`: Match int64.
+	- `ui64<uint64>`: Match uint64.
+	- `f32<f32>`: Match float32.
+	- `f64<f64>`: Match float64.
+	- `c<char>`: Match a single char8 character.
+	- `wc<char>`: Match a single char16 character.
+	- `s<string>`: Match a sequence of char8 characters.
+	- `sn<string>`: Match a null-terminated char8 string.
+	- `ws<string>`: Match a sequence of char16 characters.
+	- `wsn<string>`: Match a null-terminated char16 string.
