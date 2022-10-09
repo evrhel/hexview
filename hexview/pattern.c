@@ -7,17 +7,48 @@
 
 #define INITIAL_PATTERN_CAP 64
 
+struct pat_entry
+{
+	union
+	{
+		struct
+		{
+			uint8 wildcard;
+			uint8 value;
+		};
+		uint16 i16;
+	};
+};
+
 struct pattern_s
 {
-	short *bytes;
+	struct pat_entry *bytes;
 	unsigned int count;
 	unsigned int capacity;
 };
 
 static int has_prefix(const char *s, const char *prefix);
-static void append_byte(pattern_t *pattern, unsigned short b);
+static void append_entry(pattern_t *pattern, struct pat_entry entry);
 static void append_memory(pattern_t *pattern, void *mem, unsigned int length);
 static void append_bytes(pattern_t *pattern, short *bytes, unsigned int count);
+
+static inline void
+append_byte(pattern_t *pattern, uint8 byte)
+{
+	struct pat_entry entry;
+
+	entry.wildcard = 0;
+	entry.value = byte;
+	append_entry(pattern, entry);
+}
+
+static inline void
+append_wildcard(pattern_t *pattern)
+{
+	struct pat_entry entry;
+	entry.i16 = -1;
+	append_entry(pattern, entry);
+}
 
 pattern_t *
 pattern_generate(token_list_t *tokens, unsigned int *const size)
@@ -52,7 +83,7 @@ pattern_generate(token_list_t *tokens, unsigned int *const size)
 			vals.ui64 = 0;
 			if (*s)
 				vals.ui64 = strtoull(s, &end, 0);
-			for (; vals.ui64 != 0; vals.ui64--) append_byte(pattern, 0xff00);
+			for (; vals.ui64 != 0; vals.ui64--) append_wildcard(pattern);
 		}
 		else if (has_prefix(s, "i8"))
 		{
@@ -199,12 +230,11 @@ pattern_free(pattern_t *pattern)
 int
 pattern_find_next(pattern_t *pattern, const byte *bytes, unsigned int maxsearch, unsigned int *const out)
 {
-	byte *match, *test, *next;
-	short *tomatch;
+	const byte *match, *test, *next;
+	struct pat_entry *tomatch;
 	unsigned int remaining;
-	short m;
+	struct pat_entry m;
 	byte b;
-	const short mask = 0xff00;
 
 	test = bytes; next = test + 1;
 	tomatch = pattern->bytes;
@@ -215,7 +245,7 @@ pattern_find_next(pattern_t *pattern, const byte *bytes, unsigned int maxsearch,
 		m = *tomatch;
 		b = *test;
 
-		if ((m & mask) && (byte)m != b)
+		if (!m.wildcard && m.value != b)
 		{
 			// shift bytes to test
 			test = next; next++;
@@ -258,22 +288,22 @@ has_prefix(const char *s, const char *prefix)
 }
 
 static void
-append_byte(pattern_t *pattern, unsigned short b)
+append_entry(pattern_t *pattern, struct pat_entry entry)
 {
 	uint32 ncap;
-	uint16 *nbuf;
+	struct pat_entry *nbuf;
 
 	if (pattern->count == pattern->capacity)
 	{
 		ncap = pattern->capacity << 1;
-		nbuf = realloc(pattern->bytes, ncap * sizeof(short));
+		nbuf = realloc(pattern->bytes, ncap * sizeof(struct pat_entry));
 		if (!nbuf)
 			return;
 		pattern->capacity = ncap;
 		pattern->bytes = nbuf;
 	}
 
-	pattern->bytes[pattern->count++] = (short)b;
+	pattern->bytes[pattern->count++] = entry;
 }
 
 static void

@@ -12,7 +12,7 @@ struct win32_file
 	HANDLE hMap;   // file mapping
 };
 
-#elif __linux__
+#elif __linux__ || __APPLE__
 
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -143,7 +143,7 @@ open_file(const char *filename)
 		CloseHandle(file32->hFile);
 		file32->hFile = NULL;
 	}
-#elif __linux__
+#elif __linux__ || __APPLE__
 	struct linux_file *linux_file;
 	struct stat st;
 	int pagesize;
@@ -237,7 +237,7 @@ close_file(file_t *file)
 		CloseHandle(file32->hFile);
 
 	free(file);
-#elif __linux__
+#elif __linux__ || __APPLE__
 	struct linux_file *linux_file;
 
 	linux_file = (struct linux_file *)&file->reserved;

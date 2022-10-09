@@ -54,7 +54,7 @@ tokenize(const char *string)
 
 	back = front = NULL;
 
-	for (cursor = string; c = *cursor; cursor++)
+	for (cursor = string; (c = *cursor); cursor++)
 	{
 		switch (c)
 		{

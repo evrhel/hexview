@@ -72,25 +72,11 @@ struct outvalues_s
 	};
 };
 
-inline uint16
-swap_endianess16(uint16 num) { return (num >> 8) | (num << 8); }
+uint16 swap_endianess16(uint16 num);
 
-inline uint32
-swap_endianess32(uint32 num)
-{
-	return	((num >> 24) & 0xff) |
-			((num << 8) & 0xff0000) |
-			((num >> 8) & 0xff00) |
-			((num << 24) & 0xff000000);
-}
+uint32 swap_endianess32(uint32 num);
 
-inline uint64
-swap_endianess64(uint64 num)
-{
-	num = ((num << 8) & 0xff00ff00ff00ff00) | ((num >> 8) & 0xff00ff00ff00ff);
-	num = ((num << 16) & 0xffff0000ffff0000) | ((num >> 16) & 0xffff0000ffff);
-	return (num << 32) | (num >> 32);
-}
+uint64 swap_endianess64(uint64 num);
 
 // Convert data to the system's native endianess.
 // Parameters:

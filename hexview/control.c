@@ -164,7 +164,7 @@ create_cmd(state_t *state, cmd_exec_fn proc, const char *name)
 		cmd->proc = proc;
 #if _WIN32
 		strcpy_s(cmd->name, sizeof(cmd->name), name);
-#elif __linux__
+#elif __linux__ || __APPLE__
 		strncpy(cmd->name, name, sizeof(cmd->name));
 #endif
 
@@ -269,7 +269,7 @@ peek_cmd(state_t *state, token_list_t *tokens)
 	printf("           ");
 	printf("\033[4m");
 	for (i = 0; i < 16; i++)
-		printf(" %02hhx", i);
+		printf(" %02x", i);
 	printf("\033[m\n");
 
 	for (i = 0; i < BYTES_TO_DISPLAY; i++)

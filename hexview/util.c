@@ -7,7 +7,7 @@
 
 #if _WIN32
 #include <Windows.h>
-#elif __linux__
+#elif __linux__ || __APPLE__
 #endif
 
 struct alist_node
@@ -38,6 +38,29 @@ static struct alist_node *alist_find_node(alist_t *alist, struct alist_node *nod
 static int default_compare_fn(void *first, void *second);  // does first == second
 static void *default_copy_fn(void *key);  // returns key
 static void default_free_fn(void *key);  // does nothing
+
+uint16
+swap_endianess16(uint16 num)
+{
+	return (num >> 8) | (num << 8);
+}
+
+uint32
+swap_endianess32(uint32 num)
+{
+	return	((num >> 24) & 0xff) |
+			((num << 8) & 0xff0000) |
+			((num >> 8) & 0xff00) |
+			((num << 24) & 0xff000000);
+}
+
+uint64
+swap_endianess64(uint64 num)
+{
+	num = ((num << 8) & 0xff00ff00ff00ff00) | ((num >> 8) & 0xff00ff00ff00ff);
+	num = ((num << 16) & 0xffff0000ffff0000) | ((num >> 16) & 0xffff0000ffff);
+	return (num << 32) | (num >> 32);
+}
 
 int
 to_native_endianess(const value_u *in, int max_read, int endianess, outvalues_t *const out)
@@ -213,7 +236,7 @@ set_console_color(int color)
 {
 #if _WIN32
 
-#elif __linux__
+#elif __linux__ || __APPLE__
 
 #endif
 }
@@ -223,7 +246,7 @@ set_console_style(int style)
 {
 #if _WIN32
 
-#elif __linux__
+#elif __linux__ || __APPLE__
 
 #endif
 }

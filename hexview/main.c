@@ -8,7 +8,7 @@
 #include <Windows.h>
 #endif
 
-#define HEXVIEW_VERSION "1.0.0-rc10"
+#define HEXVIEW_VERSION "1.0.0-rc11"
 
 struct command_line
 {
